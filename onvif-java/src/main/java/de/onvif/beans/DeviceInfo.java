@@ -1,5 +1,8 @@
 package de.onvif.beans;
 
+/**
+ *  liukai
+ */
 public class DeviceInfo {
 
   private String manufacturer;
