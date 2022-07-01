@@ -58,18 +58,26 @@ public class WsNotificationTest {
 
     OnvifDevice cam = null;
     try {
-      cam = new OnvifDevice(creds.getHost(), creds.getUser(), creds.getPassword());
+//      cam = new OnvifDevice(creds.getHost(), creds.getUser(), creds.getPassword());
+      cam = new OnvifDevice("192.168.0.120", "admin", "HuaWei123");
     } catch (ConnectException | SOAPException e1) {
       System.err.println("No connection to device with ip " + creds + ", please try again.");
       System.exit(0);
     }
     System.out.println("Connected to device " + cam.getDeviceInfo());
+    System.out.println(cam.getDeviceInfo().getManufacturer());
+    System.out.println(cam.getDeviceInfo().getModel());
+    System.out.println(cam.getDeviceInfo().getSerialNumber());
 
     // get device capabilities
     Capabilities cap = cam.getDevice().getCapabilities(Arrays.asList(CapabilityCategory.ALL));
     System.out.println(cap.getDevice().toString());
     // print profiles
+    System.out.println("=========================================");
+
     printProfiles(cam);
+    System.out.println("=========================================");
+    System.out.println("=========================================");
     // takeScreenShot(profileToken, cam);
     // presets
     // List<PTZPreset> presets = cam.getPtz().getPresets(profileToken);
@@ -85,7 +93,6 @@ public class WsNotificationTest {
       Element e = (Element) object;
       printTree(e, e.getNodeName());
     }
-
     org.oasis_open.docs.wsn.b_2.ObjectFactory objectFactory =
         new org.oasis_open.docs.wsn.b_2.ObjectFactory();
     CreatePullPointSubscription pullPointSubscription = new CreatePullPointSubscription();
