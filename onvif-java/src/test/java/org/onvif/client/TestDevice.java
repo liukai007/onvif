@@ -182,7 +182,8 @@ public class TestDevice {
   }
 
   public static void main(String[] args) {
-    OnvifCredentials creds = GetTestDevice.getOnvifCredentials(args);
+    String[] args1={"192.168.0.120","admin","HuaWei123"};
+    OnvifCredentials creds = GetTestDevice.getOnvifCredentials(args1);
     try {
       // OnvifDevice.setVerbose(true);
       String out = testCamera(creds);
