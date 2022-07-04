@@ -151,7 +151,10 @@ public class TestDevice {
         List<PTZPreset> presets = ptz.getPresets(profileToken);
         if (presets != null && !presets.isEmpty()) {
           out += "\tPresets:" + presets.size() + sep;
-          for (PTZPreset p : presets) out += "\t\t" + OnvifUtils.format(p) + sep;
+          for (PTZPreset p : presets) {
+            out += "\t\t" + OnvifUtils.format(p) + sep;
+          }
+
         }
       } catch (Throwable th) {
         out += "PTZ: Unavailable" + th.getMessage() + sep;
