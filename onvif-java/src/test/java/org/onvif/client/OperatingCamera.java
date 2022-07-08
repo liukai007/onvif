@@ -2,7 +2,6 @@ package org.onvif.client;
 
 import de.onvif.soap.OnvifDevice;
 import de.onvif.utils.OnvifUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.onvif.ver10.device.wsdl.DeviceServiceCapabilities;
 import org.onvif.ver10.media.wsdl.Media;
 import org.onvif.ver10.schema.*;
@@ -21,6 +20,7 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @类名: OperatingCamera
@@ -33,32 +33,32 @@ import java.util.Map;
  */
 public class OperatingCamera {
     private static final Logger logger = LoggerFactory.getLogger(OperatingCamera.class);
-    private static Map<String, Object> getDeviceMap;
-    private static URL url;
-    private static String ipAddress;
-    private static Integer ipPort;
-    private static String userName;
-    private static String password;
+    private static Map<String, Map<String, Object>> getDeviceMaps = new ConcurrentHashMap<>();
 
 
     /**
      * 第一步验证权限
      */
-    public static Map<String, Object> getDevice(String[] args) throws IOException, SOAPException {
-        OnvifCredentials onvifCredentials = GetTestDevice.getOnvifCredentials(args);
-        getDeviceMap = testCamera(onvifCredentials);
+    public static Map<String, Object> getDevice(BaseInfo baseInfo) {
+        OnvifCredentials onvifCredentials = GetTestDevice.getOnvifCredentials(baseInfo);
+        try {
+            return testCamera(onvifCredentials);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        Map<String, Object> getDeviceMap = new HashMap<>();
+        getDeviceMap.put("on-off", "0");
         return getDeviceMap;
     }
 
     public static Map<String, Object> testCamera(OnvifCredentials creds) throws SOAPException, IOException {
-        ipAddress = creds.getHost();
         URL u =
                 creds.getHost().startsWith("http")
                         ? new URL(creds.getHost())
                         : new URL("http://" + creds.getHost());
-        url = u;
-        userName = creds.getUser();
-        password = creds.getPassword();
+        Map<String, Object> getDeviceMap = testCamera(u, creds.getUser(), creds.getPassword());
+        getDeviceMap.put("on-off", "1");
+        getDeviceMaps.put(creds.getHost(), getDeviceMap);
         return testCamera(u, creds.getUser(), creds.getPassword());
     }
 
@@ -114,27 +114,16 @@ public class OperatingCamera {
      * ContinuousMove 进行封装，第一个是默认移动速度和移动时间
      * 默认速度0.1 默认移动时间是1000毫秒
      */
-    public static synchronized void executeContinuousMove(String direction)
+    public static synchronized String executeContinuousMove(PTZ ptz, String profileToken, String direction)
             throws InterruptedException, DatatypeConfigurationException {
-        executeContinuousMove(direction, DatatypeFactory.newInstance().newDuration(1000), 0.1f);
+        return executeContinuousMove(ptz, profileToken, direction, DatatypeFactory.newInstance().newDuration(1000), 0.1f);
     }
 
-    public static synchronized void executeContinuousMove(String direction, Long timeout, Float speedValue, Boolean boolen) throws InterruptedException, DatatypeConfigurationException {
-        executeContinuousMove(direction, DatatypeFactory.newInstance().newDuration(timeout), speedValue);
+    public static synchronized String executeContinuousMove(PTZ ptz, String profileToken, String direction, Long timeout, Float speedValue, Boolean boolen) throws InterruptedException, DatatypeConfigurationException {
+        return executeContinuousMove(ptz, profileToken, direction, DatatypeFactory.newInstance().newDuration(timeout), speedValue);
     }
 
-    public static synchronized void executeContinuousMove(String direction, Duration timeout, Float speedValue) throws InterruptedException {
-        PTZ ptz = (PTZ) getDeviceMap.get("ptz");
-        String profileToken = getDeviceMap.get("profileToken_0").toString();
-        if (ptz == null || StringUtils.isBlank(profileToken)) {
-            try {
-                getDeviceMap = testCamera(url, userName, password);
-            } catch (SOAPException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+    public static synchronized String executeContinuousMove(PTZ ptz, String profileToken, String direction, Duration timeout, Float speedValue) throws InterruptedException {
         PTZSpeed speed = new PTZSpeed();
         Vector2D xy = new Vector2D();
         xy.setSpace("http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace");
@@ -191,34 +180,52 @@ public class OperatingCamera {
         }
         speed.setPanTilt(xy);
         speed.setZoom(zoom1D);
-        ptz.continuousMove(profileToken, speed, timeout);
+        try {
+            ptz.continuousMove(profileToken, speed, timeout);
+            return "";
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "no support ptz";
+        }
+
     }
 
     public static void main(String[] args) {
-        String[] args1 = {"192.168.0.120", "admin", "HuaWei123"};
-        try {
-            Map<String, Object> map = getDevice(args1);
-            executeContinuousMove(DirectionEnum.PTZ_CMD_DOWN.name(), 5000l, 0.2f, null);
-            Thread.sleep(5000);
-            executeContinuousMove(DirectionEnum.PTZ_CMD_UP.name(), 5000l, 0.2f, null);
-            Thread.sleep(5000);
-            executeContinuousMove(DirectionEnum.PTZ_CMD_LEFT.name(), 5000l, 0.2f, null);
-            Thread.sleep(5000);
-            executeContinuousMove(DirectionEnum.PTZ_CMD_RIGHT.name(), 5000l, 0.2f, null);
-            Thread.sleep(5000);
-            executeContinuousMove(DirectionEnum.PTZ_CMD_ZOOM_IN.name(), 5000l, 0.2f, null);
-            Thread.sleep(5000);
-            executeContinuousMove(DirectionEnum.PTZ_CMD_ZOOM_OUT.name(), 5000l, 0.2f, null);
-            Thread.sleep(5000);
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (SOAPException e) {
-            e.printStackTrace();
-        } catch (InterruptedException interruptedException) {
-            interruptedException.printStackTrace();
-        } catch (DatatypeConfigurationException e) {
-            e.printStackTrace();
+        BaseInfo baseInfo = new BaseInfo();
+        baseInfo.setIpAddress("192.168.0.120");
+        baseInfo.setUserName("admin");
+        baseInfo.setPassword("HuaWei123");
+        baseInfo.setSpeed(0.2f);
+        baseInfo.setTimeOut(5000l);
+        while (true) {
+            try {
+                Map<String, Object> map = new HashMap<>();
+                if (getDeviceMaps.get(baseInfo.getIpAddress()) != null) {
+                    map = getDeviceMaps.get(baseInfo.getIpAddress());
+                } else {
+                    map = getDevice(baseInfo);
+                }
+                if (null != map.get("on-off") && map.get("on-off").toString().equals("0")) {
+                    continue;
+                }
+                executeContinuousMove((PTZ) map.get("ptz"), map.get("profileToken_0").toString(), DirectionEnum.PTZ_CMD_DOWN.name(), baseInfo.getTimeOut(), baseInfo.getSpeed(), null);
+                Thread.sleep(5000);
+                executeContinuousMove((PTZ) map.get("ptz"), map.get("profileToken_0").toString(), DirectionEnum.PTZ_CMD_UP.name(), baseInfo.getTimeOut(), baseInfo.getSpeed(), null);
+                Thread.sleep(5000);
+                executeContinuousMove((PTZ) map.get("ptz"), map.get("profileToken_0").toString(), DirectionEnum.PTZ_CMD_LEFT.name(), baseInfo.getTimeOut(), baseInfo.getSpeed(), null);
+                Thread.sleep(5000);
+                executeContinuousMove((PTZ) map.get("ptz"), map.get("profileToken_0").toString(), DirectionEnum.PTZ_CMD_RIGHT.name(), baseInfo.getTimeOut(), baseInfo.getSpeed(), null);
+                Thread.sleep(5000);
+                executeContinuousMove((PTZ) map.get("ptz"), map.get("profileToken_0").toString(), DirectionEnum.PTZ_CMD_ZOOM_IN.name(), baseInfo.getTimeOut(), baseInfo.getSpeed(), null);
+                Thread.sleep(5000);
+                executeContinuousMove((PTZ) map.get("ptz"), map.get("profileToken_0").toString(), DirectionEnum.PTZ_CMD_ZOOM_OUT.name(), baseInfo.getTimeOut(), baseInfo.getSpeed(), null);
+                Thread.sleep(5000);
+            } catch (InterruptedException interruptedException) {
+                interruptedException.printStackTrace();
+            } catch (DatatypeConfigurationException e) {
+                e.printStackTrace();
+            }
         }
+
     }
 }
