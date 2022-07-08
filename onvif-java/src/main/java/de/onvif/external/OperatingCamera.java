@@ -256,43 +256,16 @@ public class OperatingCamera {
         return map;
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws DatatypeConfigurationException {
         BaseInfo baseInfo = new BaseInfo();
-        baseInfo.setIpAddress("192.168.0.121");
+        baseInfo.setIpAddress("192.168.0.120");
         baseInfo.setUserName("admin");
         baseInfo.setPassword("HuaWei123");
         baseInfo.setSpeed(0.2f);
         baseInfo.setTimeOut(5000l);
-        getOnLineOrOffLine(baseInfo);
+        System.out.println(getOnLineOrOffLine(baseInfo).toString());
         while (true) {
-            try {
-                Map<String, Object> map = new HashMap<>();
-                if (getDeviceMaps.get(baseInfo.getIpAddress()) != null) {
-                    map = getDeviceMaps.get(baseInfo.getIpAddress());
-                } else {
-                    map = getDevice(baseInfo);
-                }
-                if (null != map.get(onLineOrOffLine) && map.get(onLineOrOffLine).toString().equals("0")) {
-                    continue;
-                }
-                executeContinuousMove(baseInfo, DirectionEnum.PTZ_CMD_DOWN.name());
-                Thread.sleep(5000);
-                executeContinuousMove(baseInfo, DirectionEnum.PTZ_CMD_UP.name());
-                Thread.sleep(5000);
-                executeContinuousMove(baseInfo, DirectionEnum.PTZ_CMD_LEFT.name());
-                Thread.sleep(5000);
-                executeContinuousMove(baseInfo, DirectionEnum.PTZ_CMD_RIGHT.name());
-                Thread.sleep(5000);
-                executeContinuousMove(baseInfo, DirectionEnum.PTZ_CMD_ZOOM_IN.name());
-                Thread.sleep(5000);
-                executeContinuousMove(baseInfo, DirectionEnum.PTZ_CMD_ZOOM_OUT.name());
-                Thread.sleep(5000);
-            } catch (InterruptedException interruptedException) {
-                interruptedException.printStackTrace();
-            } catch (DatatypeConfigurationException e) {
-                e.printStackTrace();
-            }
+            System.out.println(executeContinuousMove(baseInfo, DirectionEnum.PTZ_CMD_RIGHT.name()).toString());
         }
-
     }
 }
