@@ -1,7 +1,9 @@
 package de.onvif.external;
 
+import de.onvif.beans.DeviceInfo;
 import de.onvif.soap.OnvifDevice;
 import de.onvif.utils.OnvifUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.onvif.ver10.device.wsdl.DeviceServiceCapabilities;
 import org.onvif.ver10.media.wsdl.Media;
 import org.onvif.ver10.schema.*;
@@ -32,6 +34,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * 时间    修改人   修改原因  修改内容
  */
 public class OperatingCamera {
+    private static String onvifDevice = "onvifDevice";
+    private static String onLineOrOffLine = "on-off";
+    private static String ptzSupport = "ptzSupport";
     private static final Logger logger = LoggerFactory.getLogger(OperatingCamera.class);
     private static Map<String, Map<String, Object>> getDeviceMaps = new ConcurrentHashMap<>();
 
@@ -47,7 +52,7 @@ public class OperatingCamera {
             e.printStackTrace();
         }
         Map<String, Object> getDeviceMap = new HashMap<>();
-        getDeviceMap.put("on-off", "0");
+        getDeviceMap.put(onLineOrOffLine, "0");
         return getDeviceMap;
     }
 
@@ -71,6 +76,8 @@ public class OperatingCamera {
 
     public static Map<String, Object> inspect(OnvifDevice device) {
         Map<String, Object> map = new HashMap<>();
+        map.put("on-off", "1");
+        map.put("onvifDevice", device);
         DeviceServiceCapabilities caps = device.getDevice().getServiceCapabilities();
         Media media = device.getMedia();
         media.getVideoSources();
@@ -110,20 +117,53 @@ public class OperatingCamera {
     }
 
 
+    public static synchronized Map<String, Object> executeContinuousMove(BaseInfo baseInfo, String direction) throws DatatypeConfigurationException {
+        Map<String, Object> map = new HashMap<>();
+        if (getDeviceMaps.get(baseInfo.getIpAddress()) != null) {
+            map = getDeviceMaps.get(baseInfo.getIpAddress());
+        } else {
+            map = getDevice(baseInfo);
+        }
+        if (map.get(onvifDevice) == null) {
+            map = getDevice(baseInfo);
+        }
+        if (map.get(onvifDevice) != null) {
+            OnvifDevice device = (OnvifDevice) map.get(onvifDevice);
+            DeviceInfo deviceInfo = device.getDeviceInfo();
+            if (StringUtils.isNoneBlank(deviceInfo.toString())) {
+                map.put(onLineOrOffLine, "1");
+            } else {
+                map.put(onLineOrOffLine, "0");
+            }
+        } else {
+            map.put(onLineOrOffLine, "0");
+        }
+
+        try {
+            return executeContinuousMove((PTZ) map.get("ptz"), map.get("profileToken_0").toString(), direction, baseInfo.getTimeOut(), baseInfo.getSpeed(), null);
+        } catch (InterruptedException interruptedException) {
+            interruptedException.printStackTrace();
+            Map<String, Object> map1 = new HashMap<>();
+            map1.put(ptzSupport, "noSupport");
+            return map1;
+        }
+    }
+
     /**
      * ContinuousMove 进行封装，第一个是默认移动速度和移动时间
      * 默认速度0.1 默认移动时间是1000毫秒
      */
-    public static synchronized String executeContinuousMove(PTZ ptz, String profileToken, String direction)
+    public static synchronized Map<String, Object> executeContinuousMove(PTZ ptz, String profileToken, String direction)
             throws InterruptedException, DatatypeConfigurationException {
         return executeContinuousMove(ptz, profileToken, direction, DatatypeFactory.newInstance().newDuration(1000), 0.1f);
     }
 
-    public static synchronized String executeContinuousMove(PTZ ptz, String profileToken, String direction, Long timeout, Float speedValue, Boolean boolen) throws InterruptedException, DatatypeConfigurationException {
+    public static synchronized Map<String, Object> executeContinuousMove(PTZ ptz, String profileToken, String direction, Long timeout, Float speedValue, Boolean boolen) throws InterruptedException, DatatypeConfigurationException {
         return executeContinuousMove(ptz, profileToken, direction, DatatypeFactory.newInstance().newDuration(timeout), speedValue);
     }
 
-    public static synchronized String executeContinuousMove(PTZ ptz, String profileToken, String direction, Duration timeout, Float speedValue) throws InterruptedException {
+    public static synchronized Map<String, Object> executeContinuousMove(PTZ ptz, String profileToken, String direction, Duration timeout, Float speedValue) throws InterruptedException {
+        Map<String, Object> map = new HashMap<>();
         PTZSpeed speed = new PTZSpeed();
         Vector2D xy = new Vector2D();
         xy.setSpace("http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace");
@@ -182,21 +222,48 @@ public class OperatingCamera {
         speed.setZoom(zoom1D);
         try {
             ptz.continuousMove(profileToken, speed, timeout);
-            return "";
+            map.put(ptzSupport, "support");
+            return map;
         } catch (Exception e) {
             e.printStackTrace();
-            return "no support ptz";
+            map.put(ptzSupport, "noSupport");
+            return map;
         }
 
     }
 
+    public static Map<String, Object> getOnLineOrOffLine(BaseInfo baseInfo) {
+        Map<String, Object> map = new HashMap<>();
+        if (getDeviceMaps.get(baseInfo.getIpAddress()) != null) {
+            map = getDeviceMaps.get(baseInfo.getIpAddress());
+        } else {
+            map = getDevice(baseInfo);
+        }
+        if (map.get(onvifDevice) == null) {
+            map = getDevice(baseInfo);
+        }
+        if (map.get(onvifDevice) != null) {
+            OnvifDevice device = (OnvifDevice) map.get(onvifDevice);
+            DeviceInfo deviceInfo = device.getDeviceInfo();
+            if (StringUtils.isNoneBlank(deviceInfo.toString())) {
+                map.put(onLineOrOffLine, "1");
+            } else {
+                map.put(onLineOrOffLine, "0");
+            }
+        } else {
+            map.put(onLineOrOffLine, "0");
+        }
+        return map;
+    }
+
     public static void main(String[] args) {
         BaseInfo baseInfo = new BaseInfo();
-        baseInfo.setIpAddress("192.168.0.120");
+        baseInfo.setIpAddress("192.168.0.121");
         baseInfo.setUserName("admin");
         baseInfo.setPassword("HuaWei123");
         baseInfo.setSpeed(0.2f);
         baseInfo.setTimeOut(5000l);
+        getOnLineOrOffLine(baseInfo);
         while (true) {
             try {
                 Map<String, Object> map = new HashMap<>();
@@ -205,20 +272,20 @@ public class OperatingCamera {
                 } else {
                     map = getDevice(baseInfo);
                 }
-                if (null != map.get("on-off") && map.get("on-off").toString().equals("0")) {
+                if (null != map.get(onLineOrOffLine) && map.get(onLineOrOffLine).toString().equals("0")) {
                     continue;
                 }
-                executeContinuousMove((PTZ) map.get("ptz"), map.get("profileToken_0").toString(), DirectionEnum.PTZ_CMD_DOWN.name(), baseInfo.getTimeOut(), baseInfo.getSpeed(), null);
+                executeContinuousMove(baseInfo, DirectionEnum.PTZ_CMD_DOWN.name());
                 Thread.sleep(5000);
-                executeContinuousMove((PTZ) map.get("ptz"), map.get("profileToken_0").toString(), DirectionEnum.PTZ_CMD_UP.name(), baseInfo.getTimeOut(), baseInfo.getSpeed(), null);
+                executeContinuousMove(baseInfo, DirectionEnum.PTZ_CMD_UP.name());
                 Thread.sleep(5000);
-                executeContinuousMove((PTZ) map.get("ptz"), map.get("profileToken_0").toString(), DirectionEnum.PTZ_CMD_LEFT.name(), baseInfo.getTimeOut(), baseInfo.getSpeed(), null);
+                executeContinuousMove(baseInfo, DirectionEnum.PTZ_CMD_LEFT.name());
                 Thread.sleep(5000);
-                executeContinuousMove((PTZ) map.get("ptz"), map.get("profileToken_0").toString(), DirectionEnum.PTZ_CMD_RIGHT.name(), baseInfo.getTimeOut(), baseInfo.getSpeed(), null);
+                executeContinuousMove(baseInfo, DirectionEnum.PTZ_CMD_RIGHT.name());
                 Thread.sleep(5000);
-                executeContinuousMove((PTZ) map.get("ptz"), map.get("profileToken_0").toString(), DirectionEnum.PTZ_CMD_ZOOM_IN.name(), baseInfo.getTimeOut(), baseInfo.getSpeed(), null);
+                executeContinuousMove(baseInfo, DirectionEnum.PTZ_CMD_ZOOM_IN.name());
                 Thread.sleep(5000);
-                executeContinuousMove((PTZ) map.get("ptz"), map.get("profileToken_0").toString(), DirectionEnum.PTZ_CMD_ZOOM_OUT.name(), baseInfo.getTimeOut(), baseInfo.getSpeed(), null);
+                executeContinuousMove(baseInfo, DirectionEnum.PTZ_CMD_ZOOM_OUT.name());
                 Thread.sleep(5000);
             } catch (InterruptedException interruptedException) {
                 interruptedException.printStackTrace();
