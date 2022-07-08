@@ -72,11 +72,26 @@
     </plugins>
   </reporting>
 
+<!--  <distributionManagement>-->
+<!--    <repository>-->
+<!--      <id>internal</id>-->
+<!--      <url>file://${project.build.directory}/mvn-repo</url>-->
+<!--    </repository>-->
+<!--  </distributionManagement>-->
+
+
+  <!-- Nexus Repository -->
   <distributionManagement>
     <repository>
-      <id>internal</id>
-      <url>file://${project.build.directory}/mvn-repo</url>
+      <id>releases</id>
+      <name>releases</name>
+      <url>http://nexus.naviot.com/repository/maven-releases/</url>
     </repository>
+    <snapshotRepository>
+      <id>snapshots</id>
+      <name>snapshots</name>
+      <url>http://nexus.naviot.com/repository/maven-snapshots/</url>
+    </snapshotRepository>
   </distributionManagement>
 
 </project>
