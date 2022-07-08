@@ -211,8 +211,8 @@ public class TestDevice {
     }
 
     public static void main(String[] args) {
-//        String[] args1 = {"192.168.0.120", "admin", "HuaWei123"};
-        String[] args1 = {"192.168.0.108", "admin", "budee123"};
+        String[] args1 = {"192.168.0.120", "admin", "HuaWei123"};
+//        String[] args1 = {"192.168.0.108", "admin", "budee123"};
         OnvifCredentials creds = GetTestDevice.getOnvifCredentials(args1);
         try {
             // OnvifDevice.setVerbose(true);
