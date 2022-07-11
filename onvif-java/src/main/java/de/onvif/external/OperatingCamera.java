@@ -70,7 +70,10 @@ public class OperatingCamera {
     public static Map<String, Object> testCamera(URL url, String user, String password)
             throws SOAPException, IOException {
         logger.info("Testing camera:" + url);
+        logger.info("用户名："+user);
+        logger.info("密码："+password);
         OnvifDevice device = new OnvifDevice(url, user, password);
+        logger.info("取得设备："+device.getHostname());
         return inspect(device);
     }
 
