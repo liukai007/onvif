@@ -173,18 +173,22 @@ public class OperatingCamera {
         zoom1D.setSpace("http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace");
         switch (direction) {
             case "PTZ_CMD_LEFT":
+                logger.info("摄像头向左");
                 xy.setX(-(speedValue));
                 xy.setY(0f);
                 break;
             case "PTZ_CMD_RIGHT":
+                logger.info("摄像头向右");
                 xy.setX(speedValue);
                 xy.setY(0f);
                 break;
             case "PTZ_CMD_UP":
+                logger.info("摄像头向上");
                 xy.setX(0f);
                 xy.setY(speedValue);
                 break;
             case "PTZ_CMD_DOWN":
+                logger.info("摄像头向下");
                 xy.setX(0f);
                 xy.setY(-(speedValue));
                 break;
