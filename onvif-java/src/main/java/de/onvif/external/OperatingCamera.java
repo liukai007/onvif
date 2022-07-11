@@ -313,6 +313,8 @@ public class OperatingCamera {
         baseInfo.setSpeed(0.2f);
         baseInfo.setTimeOut(5000l);
         System.out.println(getOnLineOrOffLine(baseInfo).toString());
+        System.out.println(getOnLineOrOffLine(baseInfo).toString());
+        System.out.println(getOnLineOrOffLine(baseInfo).toString());
         getReset(baseInfo);
         while (true) {
             System.out.println(executeContinuousMove(baseInfo, DirectionEnum.PTZ_CMD_RIGHT.name()).toString());
