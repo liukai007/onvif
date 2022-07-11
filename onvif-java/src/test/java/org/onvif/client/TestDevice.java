@@ -174,10 +174,12 @@ public class TestDevice {
                         PTZSpeed speed = new PTZSpeed();
                         speed.setPanTilt(vector2D);
                         speed.setZoom(vector1D);
-//                        ptz.absoluteMove(profileToken, position,speed );
-//                        ptz.relativeMove(profileToken,position,speed);
-//                        ptz.continuousMove(profileToken,speed);
-                        executeContinuousMove(ptz, profileToken, "PTZ_CMD_LEFTUP", DatatypeFactory.newInstance().newDuration(2000));
+                        ptz.gotoPreset(profileToken,presets.get(0).getToken(),speed);
+
+////                        ptz.absoluteMove(profileToken, position,speed );
+////                        ptz.relativeMove(profileToken,position,speed);
+////                        ptz.continuousMove(profileToken,speed);
+//                        executeContinuousMove(ptz, profileToken, "PTZ_CMD_LEFTUP", DatatypeFactory.newInstance().newDuration(2000));
 
                     }
 
@@ -211,7 +213,7 @@ public class TestDevice {
     }
 
     public static void main(String[] args) {
-        String[] args1 = {"192.168.0.120", "admin", "HuaWei123"};
+        String[] args1 = {"192.168.2.139", "admin", "HuaWei123"};
 //        String[] args1 = {"192.168.0.108", "admin", "budee123"};
         OnvifCredentials creds = GetTestDevice.getOnvifCredentials(args1);
         try {

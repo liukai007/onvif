@@ -70,10 +70,7 @@ public class OperatingCamera {
     public static Map<String, Object> testCamera(URL url, String user, String password)
             throws SOAPException, IOException {
         logger.info("Testing camera:" + url);
-        logger.info("用户名："+user);
-        logger.info("密码："+password);
         OnvifDevice device = new OnvifDevice(url, user, password);
-        logger.info("取得设备："+device.getHostname());
         return inspect(device);
     }
 
@@ -239,6 +236,51 @@ public class OperatingCamera {
 
     }
 
+    //复位键，默认第一个预设就是复位
+    public static Map<String, Object> getReset(BaseInfo baseInfo) {
+        Map<String, Object> map = new HashMap<>();
+        if (getDeviceMaps.get(baseInfo.getIpAddress()) != null) {
+            map = getDeviceMaps.get(baseInfo.getIpAddress());
+        } else {
+            map = getDevice(baseInfo);
+        }
+        if (map.get(onvifDevice) == null) {
+            map = getDevice(baseInfo);
+        }
+        if (map.get(onvifDevice) != null) {
+            OnvifDevice device = (OnvifDevice) map.get(onvifDevice);
+            PTZ ptz = device.getPtz();
+            String profileToken = map.get("profileToken_0").toString();
+            List<PTZPreset> presets = ptz.getPresets(profileToken);
+            if (ptz != null) {
+                map.put(onLineOrOffLine, "1");
+                if (presets != null && !presets.isEmpty()) {
+                    if (!presets.isEmpty()) {
+                        PTZVector position = new PTZVector();
+                        Vector1D vector1D = new Vector1D();
+                        vector1D.setX(1);
+                        vector1D.setSpace("http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace");
+                        position.setZoom(vector1D);
+                        Vector2D vector2D = new Vector2D();
+                        vector2D.setX(1);
+                        vector2D.setY(1);
+                        vector2D.setSpace("http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace");
+                        position.setPanTilt(vector2D);
+                        PTZSpeed speed = new PTZSpeed();
+                        speed.setPanTilt(vector2D);
+                        speed.setZoom(vector1D);
+                        ptz.gotoPreset(profileToken, presets.get(0).getToken(), speed);
+                    }
+
+                }
+            } else {
+                map.put(onLineOrOffLine, "0");
+            }
+        }
+        return map;
+    }
+
+
     public static Map<String, Object> getOnLineOrOffLine(BaseInfo baseInfo) {
         Map<String, Object> map = new HashMap<>();
         if (getDeviceMaps.get(baseInfo.getIpAddress()) != null) {
@@ -265,12 +307,13 @@ public class OperatingCamera {
 
     public static void main(String[] args) throws DatatypeConfigurationException {
         BaseInfo baseInfo = new BaseInfo();
-        baseInfo.setIpAddress("192.168.0.120");
+        baseInfo.setIpAddress("192.168.2.139");
         baseInfo.setUserName("admin");
         baseInfo.setPassword("HuaWei123");
         baseInfo.setSpeed(0.2f);
         baseInfo.setTimeOut(5000l);
         System.out.println(getOnLineOrOffLine(baseInfo).toString());
+        getReset(baseInfo);
         while (true) {
             System.out.println(executeContinuousMove(baseInfo, DirectionEnum.PTZ_CMD_RIGHT.name()).toString());
         }
