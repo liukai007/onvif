@@ -307,9 +307,12 @@ public class OperatingCamera {
 
     public static void main(String[] args) throws DatatypeConfigurationException {
         BaseInfo baseInfo = new BaseInfo();
-        baseInfo.setIpAddress("192.168.2.139");
-        baseInfo.setUserName("admin");
-        baseInfo.setPassword("HuaWei123");
+//        baseInfo.setIpAddress("192.168.2.139");
+//        baseInfo.setUserName("admin");
+//        baseInfo.setPassword("HuaWei123");
+        baseInfo.setIpAddress("192.168.6.137");
+        baseInfo.setUserName("budee");
+        baseInfo.setPassword("budee123");
         baseInfo.setSpeed(0.2f);
         baseInfo.setTimeOut(5000l);
         System.out.println(getOnLineOrOffLine(baseInfo).toString());
